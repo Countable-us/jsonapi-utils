@@ -29,13 +29,12 @@ end
 # Feature Tests
 ##
 
-
 describe PageCountTestController, type: :controller do
   include_context 'JSON API headers'
 
   before(:all) do
     TestApp.draw_page_count_test_routes
-    FactoryGirl.create_list(:user, 3, :with_posts)
+    FactoryBot.create_list(:user, 3, :with_posts)
   end
 
   describe 'page count with a paged paginator' do

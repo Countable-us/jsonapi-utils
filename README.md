@@ -54,7 +54,7 @@ end
 Support:
 
 * Ruby 1.9+ with Rails 4
-* Ruby 2.3+ with Rails 5
+* Ruby 2.4+ with Rails 5
 
 For Rails 4 add this to your application's Gemfile:
 
@@ -62,10 +62,10 @@ For Rails 4 add this to your application's Gemfile:
 gem 'jsonapi-utils', '~> 0.4.9'
 ```
 
-For Rails 5:
+For Rails 5+:
 
 ```ruby
-gem 'jsonapi-utils', '~> 0.7.2'
+gem 'jsonapi-utils', '~> 0.7.3'
 ```
 
 And then execute:
@@ -225,12 +225,12 @@ class CustomPaginator < JSONAPI::Paginator
   end
 ```
 
-And then it can be either set at the resource class level (e.g. UserResource.paginator :custom_paginator) or via config initializer:
+And then it can be either set at the resource class level (e.g. UserResource.paginator :custom) or via config initializer:
 
 ```ruby
 # config/initializers/jsonapi_resources.rb
 JSONAPI.configure do |config|
-  config.default_paginator = :custom_paginator
+  config.default_paginator = :custom
 end
 ```
 

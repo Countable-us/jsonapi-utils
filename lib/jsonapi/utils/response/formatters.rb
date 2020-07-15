@@ -15,7 +15,7 @@ module JSONAPI
         # @option options [JSONAPI::Resource] resource: it tells the formatter which resource
         #   class to be used rather than use an infered one (default behaviour)
         #
-        # @option options [JSONAPI::Resource] source_resource: it tells the formatter that this response is from a related resource
+        # @option options [JSONAPI::Resource] source: it tells the formatter that this response is from a related resource
         #   and the result should be interpreted as a related resources response
         #
         # @option options [String, Symbol] relationship_type: it tells that the formatter which relationship the data is from
@@ -32,7 +32,7 @@ module JSONAPI
         # @api public
         def jsonapi_format(object, options = {})
           if object.is_a?(Hash)
-            hash    = object.with_indifferent_access
+            hash = object.with_indifferent_access
             object = hash_to_active_record(hash[:data], options[:model])
           end
           fix_custom_request_options(object)
@@ -120,8 +120,8 @@ module JSONAPI
         # @option options [JSONAPI::Resource] :resource which resource class to be used
         #   rather than using the default one (inferred)
         #
-        # @option options [ActiveRecord::Base, JSONAPI::Resource] :source source of related resource,
-        #   the result should be interpreted as a related resources response
+        # @option options [ActiveRecord::Base, JSONAPI::Resource] :source parent model/resource
+        #   of the related resource
         #
         # @option options [String, Symbol] :relationship which relationship the data is from
         #
@@ -133,13 +133,15 @@ module JSONAPI
         #
         # @api private
         def build_collection_result(object, options)
-          records        = build_collection(object, options)
+          records = build_collection(object, options)
           result_options = result_options(object, options)
 
-          if options[:source].present? && related_resource_operation?
-            source_resource   = turn_source_into_resource(options[:source])
+          if related_resource_operation?(options)
+            source_resource = turn_source_into_resource(options[:source])
             relationship_type = get_source_relationship(options)
-            JSONAPI::RelatedResourcesOperationResult.new(:ok,
+
+            JSONAPI::RelatedResourcesOperationResult.new(
+              :ok,
               source_resource,
               relationship_type,
               records,
@@ -152,11 +154,24 @@ module JSONAPI
 
         # Is this a request for related resources?
         #
+        # In order to answer that it needs to check for some {options}
+        # controller params like {params[:source]} and {params[:relationship]}.
+        #
+        # @option options [Boolean] :related when true, jsonapi-utils infers the parent and
+        #   related resources from controller's {params} values.
+        #
+        # @option options [ActiveRecord::Base, JSONAPI::Resource] :source parent model/resource
+        #   of the related resource
+        #
+        # @option options [String, Symbol] :relationship which relationship the data is from
+        #
         # @return [Boolean]
         #
         # @api private
-        def related_resource_operation?
-          params[:source].present? && params[:relationship].present?
+        def related_resource_operation?(options)
+          (options[:related] || options[:source].present?) &&
+            params[:source].present? &&
+            params[:relationship].present?
         end
 
         # Apply a proper action setup for custom requests/actions.
@@ -263,8 +278,9 @@ module JSONAPI
         # @api private
         def result_options(records, options)
           {}.tap do |data|
-            if JSONAPI.configuration.default_paginator != :none &&
-              JSONAPI.configuration.top_level_links_include_pagination
+            data[:meta] = options.fetch(:meta, {})
+
+            if include_pagination_links?
               data[:pagination_params] = pagination_params(records, options)
             end
 
@@ -272,7 +288,7 @@ module JSONAPI
               data[:record_count] = record_count_for(records, options)
             end
 
-            if JSONAPI.configuration.top_level_meta_include_page_count
+            if include_page_count?
               data[:page_count] = page_count_for(data[:record_count])
             end
           end

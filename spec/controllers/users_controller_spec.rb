@@ -4,7 +4,7 @@ describe UsersController, type: :controller do
   include_context 'JSON API headers'
 
   before(:all) do
-    @user = FactoryGirl.create_list(:user, 3, :with_posts).first
+    @user = FactoryBot.create_list(:user, 3, :with_posts).first
   end
 
   before(:each) do
@@ -28,7 +28,7 @@ describe UsersController, type: :controller do
       expect(response).to have_http_status :ok
       expect(response).to have_primary_data('users')
       expect(response).to have_data_attributes(fields)
-      expect(response).to have_relationships(relationships)
+      expect(response).to have_relationships(relationships - ['profile'])
     end
 
     context 'with "include"' do
